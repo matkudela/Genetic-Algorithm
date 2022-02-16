@@ -1,6 +1,33 @@
 import random
 
 
+def create_sequence(parent, first_cross_point, second_cross_point):
+    # every sequence is concatenated right side (after second cross point), left side (from start to first cross
+    # point and middle)
+    left = parent[0:first_cross_point+1]
+    middle = parent[first_cross_point+1:second_cross_point+1]
+    right = parent[second_cross_point+1:]
+    sequence = right + left + middle
+    return sequence
+
+
+def fill_child(child, sequence, second_cross_point):
+    # fill right then left side of child
+    index = second_cross_point + 1
+    # sequence iterator
+    seq_it = 0
+    while -1 in child:
+        if index == len(child):
+            index = 0
+        if sequence[seq_it] in child:
+            seq_it += 1
+            continue
+        child[index] = sequence[seq_it]
+        seq_it += 1
+        index += 1
+    return child
+
+
 class TravellingSalesman:
     def __init__(self):
         # list with distances between cities
@@ -15,7 +42,9 @@ class TravellingSalesman:
         self.__open_file_and_set_distances()
         self.__generate_population()
         self.__fill_calculated_paths()
-        self.__roulette_selection()
+        # self.__roulette_selection()
+        self.__tournament_selection(8)
+        self.__ox_crossing(87)
 
     @property
     def __population(self):
@@ -127,10 +156,55 @@ class TravellingSalesman:
 
         self.__population = new_population
 
+    def __tournament_selection(self, size):
+        # tournament selection - roll couple of individuals from current population and copy best one to new population
+        # repeat until new population will be created, size argument - size of tournament list
+        new_population = []
+        for x in range(len(self.__population)):
+            tournament = []
+            for y in range(size):
+                generated = random.randint(0, self.__n-1)
+                tournament.append(self.__population[generated])
+            new_population.append(min(tournament))
+        self.__population = new_population
+
+    def __ox_crossing(self, chance):
+        new_population = []
+        for x in range(0, len(self.__population)-1, 2):
+            # check if we cross the pair of individuals or not
+            generated = random.randint(0, 100)
+            if generated > chance:
+                new_population.append(self.__population[x])
+                new_population.append(self.__population[x+1])
+                continue
+            parent1 = self.__population[x]
+            parent2 = self.__population[x+1]
+            # pick cross points
+            first_cross_point = random.randint(0, self.__n-3)
+            #print("punkt pierwszy za indexem nr: ", first_cross_point)
+            second_cross_point = random.randint(first_cross_point+1, self.__n-2)
+            #print("punkt drugi za indexem nr: ", second_cross_point)
+            middle1 = parent1[first_cross_point+1:second_cross_point+1]
+            middle2 = parent2[first_cross_point+1:second_cross_point+1]
+            child1 = [-1] * len(parent1)
+            child2 = [-1] * len(parent2)
+
+            # swap content of parents between cross points (middle part)
+            child1[first_cross_point+1:second_cross_point+1] = middle2
+            child2[first_cross_point + 1:second_cross_point + 1] = middle1
+            # create sequence
+            seq1 = create_sequence(parent1, first_cross_point, second_cross_point)
+            seq2 = create_sequence(parent2, first_cross_point, second_cross_point)
+            # fill rest of elements by created sequences
+            child1 = fill_child(child1, seq1, second_cross_point)
+            child2 = fill_child(child2, seq2, second_cross_point)
+            new_population.append(child1)
+            new_population.append(child2)
+
+        self.__population = new_population
+
     def print_distances(self):
         pass
-        # for d in self.__population:
-        #     print(d)
 
 
 t1 = TravellingSalesman()
