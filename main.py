@@ -42,9 +42,7 @@ class TravellingSalesman:
         self.__open_file_and_set_distances()
         self.__generate_population()
         self.__fill_calculated_paths()
-        # self.__roulette_selection()
-        self.__tournament_selection(8)
-        self.__ox_crossing(87)
+        self.__loop(300)
 
     @property
     def __population(self):
@@ -152,9 +150,12 @@ class TravellingSalesman:
             for y in range(len(ranges)):
                 if ranges[y][0] <= generated < ranges[y][1]:
                     index = y
+                    print("len ranges", len(ranges))
+                    print(index)
             new_population.append(self.__population[index])
 
-        self.__population = new_population
+        self.__population.clear()
+        self.__population = new_population.copy()
 
     def __tournament_selection(self, size):
         # tournament selection - roll couple of individuals from current population and copy best one to new population
@@ -162,11 +163,19 @@ class TravellingSalesman:
         new_population = []
         for x in range(len(self.__population)):
             tournament = []
+            participants_distances = []
             for y in range(size):
                 generated = random.randint(0, self.__n-1)
                 tournament.append(self.__population[generated])
-            new_population.append(min(tournament))
-        self.__population = new_population
+            # calculate trip distances of participants
+            for z in range(len(tournament)):
+                participants_distances.append(self.__calculate_distance(tournament[z]))
+            best_index = participants_distances.index(min(participants_distances))
+            # assign best one from tournament to new population
+            new_population.append(tournament[best_index])
+
+        self.__population.clear()
+        self.__population = new_population.copy()
 
     def __ox_crossing(self, chance):
         new_population = []
@@ -181,9 +190,7 @@ class TravellingSalesman:
             parent2 = self.__population[x+1]
             # pick cross points
             first_cross_point = random.randint(0, self.__n-3)
-            #print("punkt pierwszy za indexem nr: ", first_cross_point)
             second_cross_point = random.randint(first_cross_point+1, self.__n-2)
-            #print("punkt drugi za indexem nr: ", second_cross_point)
             middle1 = parent1[first_cross_point+1:second_cross_point+1]
             middle2 = parent2[first_cross_point+1:second_cross_point+1]
             child1 = [-1] * len(parent1)
@@ -201,10 +208,45 @@ class TravellingSalesman:
             new_population.append(child1)
             new_population.append(child2)
 
-        self.__population = new_population
+        self.__population.clear()
+        self.__population = new_population.copy()
 
-    def print_distances(self):
-        pass
+    def __inverse_mutation(self, chance):
+        # we want to mutate small amount of individuals of population, pick 2 cross points just like in ox_crossing
+        # then reverse digits in middle and write them into individual
+        for x in range(len(self.__population)):
+            # check if we mutate this individual or not
+            generated = random.randint(0, 100)
+            if generated > chance:
+                continue
+            # pick cross points
+            first_cross_point = random.randint(0, self.__n - 3)
+            second_cross_point = random.randint(first_cross_point + 1, self.__n - 2)
+            middle = self.__population[x][first_cross_point + 1:second_cross_point + 1]
+            # reverse middle
+            middle = middle[::-1]
+            # write reversed middle into individual
+            self.__population[x][first_cross_point + 1:second_cross_point + 1] = middle
+
+    def __loop(self, iterations):
+        best_distance = min(self.__calculated_paths)
+        best_individual = self.__population[self.__calculated_paths.index(best_distance)]
+        print("first best:", best_distance)
+        for x in range(iterations):
+            self.__fill_calculated_paths()
+            # self.__roulette_selection()
+            self.__tournament_selection(8)
+            self.__ox_crossing(87)
+            self.__inverse_mutation(5)
+            self.__calculated_paths.clear()
+            self.__fill_calculated_paths()
+            top_distance = min(self.__calculated_paths)
+            if top_distance < best_distance:
+                best_distance = top_distance
+                best_individual = self.__population[self.__calculated_paths.index(best_distance)]
+            self.__calculated_paths.clear()
+        print("best best", best_distance)
+        print(best_individual)
 
 
 t1 = TravellingSalesman()
