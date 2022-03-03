@@ -41,8 +41,9 @@ class TravellingSalesman:
 
         self.__open_file_and_set_distances()
         self.__generate_population()
-        self.__fill_calculated_paths()
-        self.__loop(300)
+        # self.__fill_calculated_paths()
+        # self.__roulette_selection()
+        self.__loop(3000)
 
     @property
     def __population(self):
@@ -150,8 +151,6 @@ class TravellingSalesman:
             for y in range(len(ranges)):
                 if ranges[y][0] <= generated < ranges[y][1]:
                     index = y
-                    print("len ranges", len(ranges))
-                    print(index)
             new_population.append(self.__population[index])
 
         self.__population.clear()
@@ -229,10 +228,12 @@ class TravellingSalesman:
             self.__population[x][first_cross_point + 1:second_cross_point + 1] = middle
 
     def __loop(self, iterations):
+        self.__fill_calculated_paths()
         best_distance = min(self.__calculated_paths)
         best_individual = self.__population[self.__calculated_paths.index(best_distance)]
         print("first best:", best_distance)
         for x in range(iterations):
+            self.__calculated_paths.clear()
             self.__fill_calculated_paths()
             # self.__roulette_selection()
             self.__tournament_selection(8)
@@ -244,7 +245,6 @@ class TravellingSalesman:
             if top_distance < best_distance:
                 best_distance = top_distance
                 best_individual = self.__population[self.__calculated_paths.index(best_distance)]
-            self.__calculated_paths.clear()
         print("best best", best_distance)
         print(best_individual)
 
